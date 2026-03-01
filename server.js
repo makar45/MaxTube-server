@@ -4,13 +4,17 @@ import Busboy from "busboy";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
 // ===============================
-// ТВОЙ LINKSHARING ACCESS GRANT
+// ТВОЙ LINKSHARING ACCESS GRANT (для просмотра видео)
 // ===============================
-const LINKSHARING_KEY = "1LBi1yyPHj2VkrXCe186w5v9AP9hhdSP2qc21q3qJexfsm6rGBvQqLkEGNrVuMtc8u4sXAGUGzaJmnKH21wDqxDnXJRxL88zmgMocb4kkCy71k4T9NQYyfStd5CVPMCTaLHJxk12VN4NvDKH32eiW1J2biSJwDTgCexWPzkpbstkj4vbHiR26KLePkz5qMXYyXmtbHov7mRtC3x43aquBdBByKMT5vqtHwnv8fivkWA8GJZumyLE44XHWr9APcdLFhANwADNRrQTURGSxiCPghoor9KfaRssBq";
+const LINKSHARING_KEY =
+  "1LBi1yyPHj2VkrXCe186w5v9AP9hhdSP2qc21q3qJexfsm6rGBvQqLkEGNrVuMtc8u4sXAGUGzaJmnKH21wDqxDnXJRxL88zmgMocb4kkCy71k4T9NQYyfStd5CVPMCTaLHJxk12VN4NvDKH32eiW1J2biSJwDTgCexWPzkpbstkj4vbHiR26KLePkz5qMXYyXmtbHov7mRtC3x43aquBdBByKMT5vqtHwnv8fivkWA8GJZumyLE44XHWr9APcdLFhANwADNRrQTURGSxiCPghoor9KfaRssBq";
 
+// ===============================
+// ТВОИ S3 КЛЮЧИ (для загрузки видео)
+// ===============================
 const STORJ_ENDPOINT = "https://gateway.storjshare.io";
-const STORJ_ACCESS_KEY = "jur55aw5cgrwvjydf63jqtpbifqa";
-const STORJ_SECRET_KEY = "jzvk7ra4seh4rfur7am3dyvjv6xi27xwqxv46cqpfwtx7fibagsx2";
+const STORJ_ACCESS_KEY = "jvwwq7u7nrgseskln74c6kvbxsha";
+const STORJ_SECRET_KEY = "jzc6zq6qbx3okxfsvunwczzm55s7qnas65efzdnmvizxcd3atiidc";
 const STORJ_BUCKET = "videos";
 
 // ===============================
@@ -38,7 +42,10 @@ app.post("/upload", (req, res) => {
   let mimeType = null;
 
   busboy.on("file", (fieldname, file, info) => {
-    fileName = Date.now() + "_" + info.filename.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+    fileName =
+      Date.now() +
+      "_" +
+      info.filename.replace(/[^a-zA-Z0-9.\-_]/g, "_");
     mimeType = info.mimeType;
 
     const chunks = [];
@@ -68,7 +75,7 @@ app.post("/upload", (req, res) => {
 
       res.json({ url });
     } catch (err) {
-      console.error(err);
+      console.error("UPLOAD ERROR:", err);
       res.status(500).json({ error: "Upload failed" });
     }
   });
