@@ -1,51 +1,83 @@
 import express from "express";
-import multer from "multer";
 import cors from "cors";
+import Busboy from "busboy";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
+// ===============================
+// ТВОИ ДАННЫЕ STORJ
+// ===============================
+const STORJ_ENDPOINT = "https://gateway.storjshare.io";
+const STORJ_ACCESS_KEY = "jur55aw5cgrwvjydf63jqtpbifqa";
+const STORJ_SECRET_KEY = "jzvk7ra4seh4rfur7am3dyvjv6xi27xwqxv46cqpfwtx7fibagsx2";
+const STORJ_BUCKET = "videos"; // имя бакета в Storj
+
+// ===============================
 const app = express();
 app.use(cors());
 
-// Хранилище для загрузки файлов во временную память
-const upload = multer({ storage: multer.memoryStorage() });
-
-// Настройки Storj — ТВОИ КЛЮЧИ УЖЕ ВСТАВЛЕНЫ
 const s3 = new S3Client({
   region: "us-east-1",
-  endpoint: "https://gateway.storjshare.io",
+  endpoint: STORJ_ENDPOINT,
   credentials: {
-    accessKeyId: "jur55aw5cgrwvjydf63jqtpbifqa",
-    secretAccessKey: "jzvk7ra4seh4rfur7am3dyvjv6xi27xwqxv46cqpfwtx7fibagsx2",
+    accessKeyId: STORJ_ACCESS_KEY,
+    secretAccessKey: STORJ_SECRET_KEY
   },
+  forcePathStyle: true
 });
 
-// Маршрут загрузки
-app.post("/upload", upload.single("file"), async (req, res) => {
-  try {
-    const file = req.file;
+// ===============================
+// Загрузка файла в Storj (без multer)
+// ===============================
+app.post("/upload", (req, res) => {
+  const busboy = Busboy({ headers: req.headers });
 
-    if (!file) {
-      return res.status(400).json({ error: "Файл не получен" });
+  let fileBuffer = null;
+  let fileName = null;
+  let mimeType = null;
+
+  busboy.on("file", (fieldname, file, info) => {
+    fileName = Date.now() + "_" + info.filename.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+    mimeType = info.mimeType;
+
+    const chunks = [];
+    file.on("data", (chunk) => chunks.push(chunk));
+    file.on("end", () => {
+      fileBuffer = Buffer.concat(chunks);
+    });
+  });
+
+  busboy.on("finish", async () => {
+    if (!fileBuffer) {
+      return res.status(400).json({ error: "No file" });
     }
 
-    const fileName = Date.now() + "-" + file.originalname;
+    try {
+      await s3.send(
+        new PutObjectCommand({
+          Bucket: STORJ_BUCKET,
+          Key: fileName,
+          Body: fileBuffer,
+          ContentType: mimeType
+        })
+      );
 
-    const command = new PutObjectCommand({
-      Bucket: "videos",
-      Key: fileName,
-      Body: file.buffer,
-      ContentType: file.mimetype,
-    });
+      // ПОЛНАЯ ссылка на видео
+      const url = `https://gateway.storjshare.io/${STORJ_BUCKET}/${fileName}`;
 
-    await s3.send(command);
+      res.json({ url });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Upload failed" });
+    }
+  });
 
-    const fileUrl = `https://gateway.storjshare.io/videos/${fileName}`;
-
-    res.json({ url: fileUrl });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Ошибка загрузки" });
-  }
+  req.pipe(busboy);
 });
 
-app.listen(3000, () => console.log("Server running on port 3000"));
+// ===============================
+app.get("/", (req, res) => {
+  res.send("MaxTube backend is running");
+});
+
+const port = process.env.PORT || 3000;
+app.listen(port, () => console.log("Server running on port " + port));
