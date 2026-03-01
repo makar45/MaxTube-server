@@ -9,7 +9,7 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 const STORJ_ENDPOINT = "https://gateway.storjshare.io";
 const STORJ_ACCESS_KEY = "jur55aw5cgrwvjydf63jqtpbifqa";
 const STORJ_SECRET_KEY = "jzvk7ra4seh4rfur7am3dyvjv6xi27xwqxv46cqpfwtx7fibagsx2";
-const STORJ_BUCKET = "videos"; // имя бакета в Storj
+const STORJ_BUCKET = "videos"; // ты сказал "videos"
 
 // ===============================
 const app = express();
@@ -61,8 +61,8 @@ app.post("/upload", (req, res) => {
         })
       );
 
-      // ПОЛНАЯ ссылка на видео
-      const url = `https://gateway.storjshare.io/${STORJ_BUCKET}/${fileName}`;
+      // ПРАВИЛЬНАЯ ССЫЛКА ДЛЯ ТВОЕГО STORJ
+      const url = `https://gateway.storjshare.io/s/${STORJ_ACCESS_KEY}/${STORJ_BUCKET}/${fileName}`;
 
       res.json({ url });
     } catch (err) {
